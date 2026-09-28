@@ -1,0 +1,22 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Virtual environment
+.venv/
+
+# macOS
+.DS_Store
+
+# Large raw datasets
+**/sales_transactions.csv
+**/sales_transactions.csv.zip
+**/retail_clean_dataset/
+**/retail_contaminated_dataset/
+
+# Secrets
+.env
+.env.*
+!.env.example

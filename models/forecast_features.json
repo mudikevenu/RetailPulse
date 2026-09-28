@@ -1,0 +1,16 @@
+[
+  "day_of_week",
+  "day_of_month",
+  "month",
+  "quarter",
+  "is_weekend",
+  "active_promotion_count",
+  "active_all_target_promotions",
+  "active_targeted_promotions",
+  "max_scheduled_discount_pct",
+  "units_lag_1",
+  "units_lag_7",
+  "units_lag_364",
+  "units_rolling_mean_7",
+  "year"
+]
