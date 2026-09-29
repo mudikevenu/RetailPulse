@@ -1,215 +1,190 @@
+# RetailPulse — Retail Demand Forecasting & Analytics
 
-# RetailPulse — AI-Powered Demand Forecasting
+RetailPulse is a data science project that uses historical retail sales data and machine learning to forecast daily demand. It includes a Streamlit dashboard for exploring historical sales, reviewing model performance, and viewing future demand forecasts.
 
-## Project Overview
+**Live dashboard:** https://retailpulse-venu.streamlit.app
+**GitHub repository:** https://github.com/mudikevenu/RetailPulse
 
-RetailPulse is a retail analytics project that uses historical sales data and machine learning to forecast daily product demand. The goal is to help retail businesses make better inventory and demand-planning decisions.
+## Project Objectives
 
-## Current Features
+- Analyze historical retail sales patterns.
+- Build a machine learning model to forecast daily unit demand.
+- Compare model performance against a seasonal-naive baseline.
+- Present historical data, forecasts, and evaluation results through an interactive dashboard.
+- Document data-quality decisions, evaluation methodology, and limitations.
 
-- Interactive Streamlit demand forecasting dashboard
-- Daily sales data analysis and visualization
-- Random Forest demand forecasting model
-- Adjustable forecast horizon
-- Forecast results displayed in a chart and table
-- CSV export of generated forecasts
-- Model evaluation using MAE, RMSE, and MAPE
-- Historical quarterly backtesting against a seasonal-naive baseline
+## Features
+
+- Historical daily sales visualization.
+- Random Forest demand forecasting.
+- Calendar, lagged-sales, rolling-average, and promotion-related features.
+- Comparison with a seasonal-naive forecasting baseline.
+- Quarterly expanding-window backtesting.
+- Interactive forecast dashboard built with Streamlit.
+- Forecast evaluation metrics and downloadable results, where available in the dashboard.
 
 ## Technology Stack
 
-- Python 3.11
-- Pandas and NumPy
-- Scikit-learn
-- Streamlit
-- Matplotlib
-- Joblib
-- DuckDB
+- **Language:** Python
+- **Data processing:** pandas, NumPy, DuckDB
+- **Machine learning:** scikit-learn
+- **Forecasting:** Random Forest regression
+- **Visualization and dashboard:** Matplotlib, Streamlit
+- **Model persistence:** joblib
+- **Development:** Jupyter Notebook, Git, GitHub
 
-## Model Evaluation
+Prophet is included in the project environment, but the reported model results in this README are for the Random Forest model and seasonal-naive baseline.
 
-The Random Forest model was evaluated on historical data from October through December 2025 using rolling one-day-ahead predictions.
+## Dataset and Data Preparation
 
-| Metric | Result |
+The project uses retail transaction data covering **January 1, 2022, through December 31, 2025**.
+
+The original transaction dataset contains approximately 9.97 million rows. DuckDB was used to process the large dataset without loading the entire file into pandas.
+
+### Data-quality handling
+
+- Checked transaction fields and date coverage.
+- Validated the relationship between quantity, unit price, discount, and transaction value.
+- Identified exact full-row duplicate records.
+- Removed exact full-row duplicates for the daily aggregation used in forecasting.
+- Aggregated transactions into a daily sales time series.
+- Created calendar, lag, rolling-average, and promotion-related features.
+
+After exact full-row deduplication, the processed data contains **9,959,019 transaction rows** and **1,461 daily records**.
+
+Duplicate removal is a data-preparation assumption: identical rows may sometimes represent legitimate repeated transactions. The deduplication decision should therefore be reviewed if authoritative transaction IDs or source-system guidance become available.
+
+The resulting daily dataset contains **18,733,005 units sold** across the four-year period.
+
+## Forecasting Methodology
+
+The forecasting workflow uses daily unit sales as its target.
+
+The Random Forest model uses features such as:
+
+- Calendar information.
+- Previous-day and other lagged sales.
+- Rolling averages of historical sales.
+- Promotion-related features.
+- Year information.
+
+The model is compared with a seasonal-naive baseline, which uses sales from the corresponding seasonal period in the past.
+
+### Evaluation approach
+
+The reported final-period evaluation covers **October–December 2025** using rolling one-day-ahead predictions. For each prediction, lag features use actual sales observed before that forecast date.
+
+This is different from forecasting multiple future days recursively, where earlier predictions are used to construct lag features for later predictions.
+
+## Model Evaluation Results
+
+### October–December 2025
+
+| Metric | Random Forest | Seasonal-naive baseline |
+|---|---:|---:|
+| MAE | 411.93 units/day | 515.37 units/day |
+| RMSE | 509.59 units/day | 623.17 units/day |
+| MAPE | 2.55% | 3.24% |
+
+**Metric definitions**
+
+- **MAE:** Mean Absolute Error; the average absolute difference between actual and predicted daily units.
+- **RMSE:** Root Mean Squared Error; a metric that penalizes larger errors more heavily.
+- **MAPE:** Mean Absolute Percentage Error; the average absolute percentage error.
+
+### Quarterly backtesting
+
+Across seven expanding-window quarterly backtests from **Q1 2024 through Q3 2025**, the recorded mean quarterly MAPE was:
+
+| Model | Mean quarterly MAPE |
 |---|---:|
-| Mean Absolute Error (MAE) | 411.93 units/day |
-| Root Mean Squared Error (RMSE) | 509.59 units/day |
-| Mean Absolute Percentage Error (MAPE) | 2.55% |
+| Random Forest | 3.26% |
+| Seasonal-naive baseline | 5.24% |
 
-Across seven historical quarters, the Random Forest model achieved an average quarterly MAPE of 3.26%, compared with 5.24% for the seasonal-naive baseline.
+The Random Forest model had lower MAPE than the baseline in each of the seven evaluated quarters. These results describe the evaluated historical periods and do not guarantee future performance.
 
-These are historical evaluation results, not guarantees of future forecast accuracy. Multi-day forecasts may perform differently because they rely on predicted rather than observed future sales.
+The October–December 2025 period was used during model/configuration selection, so it should not be considered a completely untouched final holdout.
+
+## Streamlit Dashboard
+
+The dashboard presents:
+
+- Historical daily sales.
+- Forecasted demand.
+- Model evaluation metrics.
+- Quarterly model comparison results.
+- Supporting tables and forecast outputs.
+
+The demonstration forecast is configured to start on **January 1, 2026**, immediately after the available historical sales period.
 
 ## Project Structure
 
 ```text
 RetailPulse/
+├── 01_eda.ipynb
+├── app.py
+├── README.md
+├── requirements.txt
 ├── data/
 │   └── processed/
+│       └── daily_sales_with_promotion_features.csv
 ├── models/
-│   ├── random_forest_demand_forecast.joblib
-│   └── forecast_features.json
-├── notebooks/
-│   └── 01_eda.ipynb
-├── reports/
-│   ├── forecast_model_comparison.csv
-│   ├── quarterly_forecast_backtest.csv
-│   └── forecast_model_evaluation.md
-├── tests/
-├── dashboard/
-├── app.py
-└── README.md
+│   ├── forecast_features.json
+│   └── random_forest_demand_forecast.joblib
+└── reports/
+    ├── forecast_model_comparison.csv
+    ├── forecast_model_evaluation.md
+    └── quarterly_forecast_backtest.csv
 ```
 
 ## Run Locally
 
-1. Clone or download the project repository.
-2. Open a terminal in the project directory.
-3. Activate the Python virtual environment.
-4. Install the required dependencies.
-5. Run the Streamlit application.
+### 1. Clone the repository
 
 ```bash
-source .venv/bin/activate
-pip install streamlit pandas numpy scikit-learn joblib
-streamlit run app.py
+git clone https://github.com/mudikevenu/RetailPulse.git
+cd RetailPulse
 ```
 
-Ensure the required sales dataset, trained model, and feature configuration files exist at the paths expected by `app.py`.
+### 2. Create a virtual environment
 
-## Data Quality
-
-The sales data was explored using DuckDB to handle the large transaction file efficiently. Exact duplicate transaction rows were identified, and a deduplicated daily sales series was used for the forecasting experiments. This assumes identical full-row records represent repeated records; that assumption should be validated against the source system where possible.
-
-## Limitations and Future Work
-
-- Validate forecast performance with additional rolling-origin backtests.
-- Verify that all forecasting features would be available at prediction time.
-- Investigate demand peaks that the model underestimates.
-- Extend the platform with customer segmentation and churn prediction.
-- Explore inventory optimization and anomaly detection.
-- Add automated tests, model monitoring, and deployment configuration.
-
-## Disclaimer
-
-This is an ongoing project. Reported results reflect the dataset and evaluation procedure used during development. Additional validation is required before operational or business-critical use.
-# RetailPulse — AI-Powered Customer Analytics & Demand Forecasting
-
-RetailPulse is a retail analytics platform designed to analyze sales trends and forecast daily product demand using historical retail transaction data and machine learning.
-
-## Project Objectives
-
-- Forecast daily retail demand.
-- Analyze historical sales patterns and seasonality.
-- Evaluate forecasting models against a seasonal-naive baseline.
-- Build an interactive dashboard for generating and exploring demand forecasts.
-- Establish a foundation for customer analytics, churn prediction, inventory optimization, and model monitoring.
-
-## Technology Stack
-
-- Python 3.11
-- Pandas and NumPy
-- DuckDB for large-dataset analysis
-- Scikit-learn
-- Prophet
-- Matplotlib
-- Streamlit
-- Joblib
-
-## Dataset
-
-The project uses retail transaction data covering January 2022 through December 2025.
-
-The original sales dataset contains approximately 9.97 million transaction rows. Exact duplicate rows were removed for the cleaned forecasting series, subject to the assumption that identical full-row records represent duplicate transactions.
-
-The daily forecasting dataset contains 1,461 calendar dates.
-
-## Demand Forecasting
-
-A Random Forest regression model was developed using calendar variables, historical sales lags, rolling averages, and promotion-calendar features.
-
-A seasonal-naive model, which uses sales from the corresponding date in the previous year, serves as the baseline.
-
-### Historical Model Evaluation
-
-The Random Forest model was evaluated on October–December 2025 using rolling one-day-ahead predictions.
-
-| Metric | Random Forest |
-|---|---:|
-| Mean Absolute Error (MAE) | 411.93 units/day |
-| Root Mean Squared Error (RMSE) | 509.59 units/day |
-| Mean Absolute Percentage Error (MAPE) | 2.55% |
-
-### Quarterly Backtesting
-
-Across seven historical quarters from 2024 Q1 through 2025 Q3:
-
-- Mean quarterly Random Forest MAPE: 3.26%
-- Mean quarterly seasonal-naive MAPE: 5.24%
-
-These are averages of quarterly MAPE values, not a pooled MAPE. The backtest results are historical measurements and do not guarantee future forecasting accuracy.
-
-The October–December 2025 evaluation uses actual previous-day sales for lag features. A multi-day forecast that feeds its own predictions back into the model may perform differently.
-
-## Interactive Dashboard
-
-The Streamlit dashboard provides:
-
-- A selectable forecast horizon.
-- Daily demand forecasts.
-- Forecast visualizations and summary metrics.
-- A downloadable forecast CSV.
-- Historical model-performance metrics.
-- Quarterly comparison of the forecasting model and baseline.
-
-## Project Structure
-
-```text
-RetailPulse/
-├── dashboard/
-├── data/
-│   └── processed/
-├── models/
-├── notebooks/
-│   └── 01_eda.ipynb
-├── reports/
-├── src/
-├── tests/
-├── app.py
-└── README.md
-```
-
-## Running the Dashboard
-
-Activate the project virtual environment:
+Python 3.11 is the development environment used for this project.
 
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Install the dependencies if they are not already installed:
+### 3. Install dependencies
 
 ```bash
-pip install pandas numpy scikit-learn streamlit joblib matplotlib
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-Start the dashboard from the project root:
+### 4. Launch the dashboard
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-Open the local URL displayed in the terminal.
+Open the local URL displayed in your Terminal, usually:
 
-## Limitations and Future Work
+`http://localhost:8501`
 
-- Evaluate forecasting with additional rolling-origin backtests and an untouched final test period.
-- Investigate the business validity of exact duplicate removal.
-- Verify that promotion features would be available at the time a forecast is made.
-- Extend the platform with customer segmentation and churn prediction.
-- Add inventory anomaly detection and inventory optimization.
-- Introduce automated tests, model monitoring, drift detection, and deployment workflows.
+The dashboard uses the processed data and saved model included in the repository. The original large transaction dataset is not required to launch the existing dashboard.
+
+## Limitations and Future Improvements
+
+- Forecast accuracy may change as sales patterns and customer behavior change.
+- Random Forest predictions may smooth sharp seasonal peaks.
+- Historical evaluation results do not guarantee future accuracy.
+- Recursive multi-day forecasts can differ from rolling one-day-ahead evaluation results.
+- The available promotion schedule ends in November 2025. Future promotion activity is set to zero in the demonstration forecast because a future schedule is unavailable.
+- The displayed forecast begins in January 2026 and is a historical demonstration, not a forecast updated through the current date.
+- Exact-row deduplication should be reviewed against authoritative transaction identifiers where available.
+- Additional work could include customer segmentation, churn prediction, inventory optimization, automated monitoring, and model retraining.
 
 ## Disclaimer
 
-Forecast metrics describe performance on the historical evaluation periods and should not be interpreted as guaranteed future accuracy. Results should be independently validated before use in retail operational decisions.
+RetailPulse is a data science project intended for analytical and educational use. Forecasts are estimates based on historical data and modeling assumptions. They should not be treated as guaranteed sales outcomes or used as the sole basis for business decisions.
