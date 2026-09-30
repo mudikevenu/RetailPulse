@@ -356,3 +356,522 @@ else:
         "Quarterly backtesting file not found: "
         "reports/quarterly_forecast_backtest.csv"
     )
+
+# Customer Segmentation Analysis
+st.header("👥 Customer Segmentation Analysis")
+
+segments_path = Path("data/processed/customer_segments.csv")
+segment_profiles_path = Path("reports/customer_segment_profiles.csv")
+
+if segments_path.exists() and segment_profiles_path.exists():
+    segments_df = pd.read_csv(segments_path)
+    segment_profiles = pd.read_csv(segment_profiles_path)
+
+    col1, col2 = st.columns(2)
+    col1.metric("Customers Segmented", f"{segments_df['cust_id'].nunique():,}")
+    col2.metric("Number of Segments", f"{segments_df['cluster_id'].nunique()}")
+
+    st.subheader("Customer Segment Distribution")
+
+    import altair as alt
+
+    segment_chart = (
+        alt.Chart(segment_profiles)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "customer_count:Q",
+                title="Number of Customers",
+                scale=alt.Scale(domainMin=0),
+            ),
+            y=alt.Y(
+                "cluster_id:N",
+                title="Customer Segment",
+                sort="-x",
+            ),
+            color=alt.Color(
+                "cluster_id:N",
+                title="Segment",
+                legend=None,
+            ),
+            tooltip=[
+                alt.Tooltip("cluster_id:N", title="Segment"),
+                alt.Tooltip("customer_count:Q", title="Customers"),
+                alt.Tooltip(
+                    "customer_share_pct:Q",
+                    title="Customer Share (%)",
+                    format=".2f",
+                ),
+            ],
+        )
+        .properties(height=240)
+    )
+
+    st.altair_chart(segment_chart, width="stretch")
+
+    st.subheader("Segment Profile Summary")
+
+    display_profiles = segment_profiles.rename(
+        columns={
+            "cluster_id": "Segment",
+            "customer_count": "Customers",
+            "avg_recency_days": "Average Recency (Days)",
+            "avg_orders": "Average Orders",
+            "avg_spend": "Average Spend",
+            "median_spend": "Median Spend",
+            "avg_units": "Average Units",
+            "customer_share_pct": "Customer Share (%)",
+        }
+    )
+
+    st.dataframe(
+        display_profiles.round(2),
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.subheader("Explore Individual Customers")
+
+    available_segments = sorted(segments_df["cluster_id"].dropna().unique())
+    selected_segment = st.selectbox(
+        "Filter by customer segment",
+        options=["All Segments"] + available_segments,
+        key="segmentation_filter",
+    )
+
+    filtered_segments = segments_df.copy()
+
+    if selected_segment != "All Segments":
+        filtered_segments = filtered_segments[
+            filtered_segments["cluster_id"] == selected_segment
+        ]
+
+    st.caption(f"Showing {len(filtered_segments):,} customers")
+
+    st.dataframe(
+        filtered_segments,
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.download_button(
+        label="Download Customer Segmentation CSV",
+        data=filtered_segments.to_csv(index=False).encode("utf-8"),
+        file_name="customer_segments.csv",
+        mime="text/csv",
+        key="download_customer_segments",
+    )
+
+else:
+    st.warning(
+        "Customer segmentation files were not found. "
+        "Please run the customer segmentation pipeline first."
+    )
+
+
+# --------------------------------------------------
+# Customer Retention Analysis
+# --------------------------------------------------
+
+st.divider()
+st.header("👥 Customer Retention Analysis")
+
+st.write(
+    "Explore customer purchase recency, spending, and "
+    "rule-based inactivity categories. These categories "
+    "are monitoring indicators, not verified churn predictions."
+)
+
+retention_path = (
+    PROJECT_DIR
+    / "data"
+    / "processed"
+    / "customer_retention_analysis.csv"
+)
+
+retention_summary_path = (
+    PROJECT_DIR
+    / "reports"
+    / "customer_retention_summary.csv"
+)
+
+if retention_path.exists() and retention_summary_path.exists():
+    retention_df = pd.read_csv(retention_path)
+    retention_summary = pd.read_csv(retention_summary_path)
+
+    # Summary metrics
+    total_customers = retention_df["customer_id"].nunique()
+
+    extended_count = int(
+        retention_df["retention_category"]
+        .eq("Extended Inactivity")
+        .sum()
+    )
+
+    watch_count = int(
+        retention_df["retention_category"]
+        .eq("Inactivity Watch")
+        .sum()
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Customers Analyzed", f"{total_customers:,}")
+    col2.metric("Inactivity Watch", f"{watch_count:,}")
+    col3.metric("Extended Inactivity", f"{extended_count:,}")
+    st.subheader("Customer Recency Categories")
+
+    import altair as alt
+
+    retention_chart = (
+        alt.Chart(retention_summary)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "customer_count:Q",
+                title="Number of Customers",
+                scale=alt.Scale(domainMin=0),
+            ),
+            y=alt.Y(
+                "retention_category:N",
+                title="Retention Category",
+                sort="-x",
+            ),
+            tooltip=[
+                alt.Tooltip("retention_category:N", title="Category"),
+                alt.Tooltip("customer_count:Q", title="Customers"),
+                alt.Tooltip(
+                    "customer_percentage:Q",
+                    title="Customer Share (%)",
+                    format=".2f",
+                ),
+            ],
+        )
+        .properties(height=260)
+    )
+
+    st.altair_chart(retention_chart, width="stretch")
+
+    st.subheader("Retention Category Summary")
+
+    st.dataframe(
+        retention_summary,
+        width="stretch",
+        hide_index=True,
+    )
+
+    st.subheader("Explore Individual Customers")
+
+    available_categories = sorted(
+        retention_df["retention_category"].dropna().unique()
+    )
+
+    selected_category = st.selectbox(
+        "Filter by retention category",
+        ["All Categories"] + available_categories,
+    )
+
+    filtered_retention = retention_df.copy()
+
+    if selected_category != "All Categories":
+        filtered_retention = filtered_retention[
+            filtered_retention["retention_category"]
+            == selected_category
+        ]
+
+    display_columns = [
+        "customer_id",
+        "recency_days",
+        "total_receipts",
+        "total_units",
+        "total_spend",
+        "retention_category",
+        "risk_interpretation",
+    ]
+
+    st.dataframe(
+        filtered_retention[display_columns],
+        width="stretch",
+        hide_index=True,
+    )
+
+    st.download_button(
+        label="Download Customer Retention Analysis",
+        data=filtered_retention[display_columns].to_csv(
+            index=False
+        ).encode("utf-8"),
+        file_name="customer_retention_analysis.csv",
+        mime="text/csv",
+    )
+
+else:
+    st.warning(
+        "Customer retention files were not found. "
+        "Run `python src/customer_retention.py` first."
+    )
+
+
+# Customer Spending Decline Analysis
+st.header("💰 Customer Spending Analysis")
+
+spending_path = Path("data/processed/customer_spending_analysis.csv")
+spending_summary_path = Path("reports/customer_spending_decline_summary.csv")
+
+if spending_path.exists() and spending_summary_path.exists():
+    spending_df = pd.read_csv(spending_path)
+    spending_summary = pd.read_csv(spending_summary_path)
+
+    total_customers = spending_df["customer_id"].nunique()
+    declining_customers = spending_df[
+        spending_df["spending_category"].isin(
+            ["Low Decline", "Moderate Decline", "High Decline"]
+        )
+    ]["customer_id"].nunique()
+    high_decline_customers = spending_df[
+        spending_df["spending_category"] == "High Decline"
+    ]["customer_id"].nunique()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Customers Analysed", f"{total_customers:,}")
+    col2.metric("Customers with Spending Decline", f"{declining_customers:,}")
+    col3.metric("High Spending Decline", f"{high_decline_customers:,}")
+
+    st.caption(
+        "Historical comparison: January–June 2025 versus "
+        "July–December 2025. These categories describe past spending "
+        "changes, not confirmed future churn."
+    )
+
+    st.subheader("Spending Change by Customer Category")
+
+    import altair as alt
+
+    spending_chart = (
+        alt.Chart(spending_summary)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "customer_count:Q",
+                title="Number of Customers",
+                scale=alt.Scale(domainMin=0),
+            ),
+            y=alt.Y(
+                "spending_category:N",
+                title="Spending Category",
+                sort="-x",
+            ),
+            color=alt.Color(
+                "spending_category:N",
+                title="Category",
+                legend=None,
+            ),
+            tooltip=[
+                alt.Tooltip("spending_category:N", title="Category"),
+                alt.Tooltip("customer_count:Q", title="Customers"),
+                alt.Tooltip(
+                    "customer_percentage:Q",
+                    title="Customer Share (%)",
+                    format=".2f",
+                ),
+                alt.Tooltip(
+                    "average_spending_change_pct:Q",
+                    title="Average Spending Change (%)",
+                    format=".2f",
+                ),
+            ],
+        )
+        .properties(height=240)
+    )
+
+    st.altair_chart(spending_chart, width="stretch")
+
+    st.subheader("Spending Category Summary")
+
+    display_spending_summary = spending_summary.rename(
+        columns={
+            "spending_category": "Spending Category",
+            "customer_count": "Customers",
+            "average_baseline_spend": "Average Baseline Spend",
+            "average_followup_spend": "Average Follow-up Spend",
+            "average_spending_change_pct": "Average Change (%)",
+            "customer_percentage": "Customer Share (%)",
+        }
+    )
+
+    st.dataframe(
+        display_spending_summary.round(2),
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.subheader("Explore Customer Spending")
+
+    spending_categories = sorted(
+        spending_df["spending_category"].dropna().unique().tolist()
+    )
+
+    selected_spending_category = st.selectbox(
+        "Filter by spending category",
+        options=["All Categories"] + spending_categories,
+        key="spending_analysis_filter",
+    )
+
+    filtered_spending = spending_df.copy()
+
+    if selected_spending_category != "All Categories":
+        filtered_spending = filtered_spending[
+            filtered_spending["spending_category"]
+            == selected_spending_category
+        ]
+
+    st.caption(f"Showing {len(filtered_spending):,} customers")
+
+    st.dataframe(
+        filtered_spending,
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.download_button(
+        label="Download Customer Spending Analysis CSV",
+        data=filtered_spending.to_csv(index=False).encode("utf-8"),
+        file_name="customer_spending_analysis.csv",
+        mime="text/csv",
+        key="customer_spending_analysis_download",
+    )
+
+
+# Customer Spending Decline Analysis
+st.header("💰 Customer Spending Analysis")
+
+spending_path = Path("data/processed/customer_spending_analysis.csv")
+spending_summary_path = Path("reports/customer_spending_decline_summary.csv")
+
+if spending_path.exists() and spending_summary_path.exists():
+    spending_df = pd.read_csv(spending_path)
+    spending_summary = pd.read_csv(spending_summary_path)
+
+    total_customers = spending_df["customer_id"].nunique()
+    declining_customers = spending_df[
+        spending_df["spending_category"].isin(
+            ["Low Decline", "Moderate Decline", "High Decline"]
+        )
+    ]["customer_id"].nunique()
+    high_decline_customers = spending_df[
+        spending_df["spending_category"] == "High Decline"
+    ]["customer_id"].nunique()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Customers Analysed", f"{total_customers:,}")
+    col2.metric("Customers with Spending Decline", f"{declining_customers:,}")
+    col3.metric("High Spending Decline", f"{high_decline_customers:,}")
+
+    st.caption(
+        "Historical comparison: January–June 2025 versus "
+        "July–December 2025. These categories describe past spending "
+        "changes, not confirmed future churn."
+    )
+
+    st.subheader("Spending Change by Customer Category")
+
+    import altair as alt
+
+    spending_chart = (
+        alt.Chart(spending_summary)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "customer_count:Q",
+                title="Number of Customers",
+                scale=alt.Scale(domainMin=0),
+            ),
+            y=alt.Y(
+                "spending_category:N",
+                title="Spending Category",
+                sort="-x",
+            ),
+            color=alt.Color(
+                "spending_category:N",
+                title="Category",
+                legend=None,
+            ),
+            tooltip=[
+                alt.Tooltip("spending_category:N", title="Category"),
+                alt.Tooltip("customer_count:Q", title="Customers"),
+                alt.Tooltip(
+                    "customer_percentage:Q",
+                    title="Customer Share (%)",
+                    format=".2f",
+                ),
+                alt.Tooltip(
+                    "average_spending_change_pct:Q",
+                    title="Average Spending Change (%)",
+                    format=".2f",
+                ),
+            ],
+        )
+        .properties(height=240)
+    )
+
+    st.altair_chart(spending_chart, width="stretch")
+
+    st.subheader("Spending Category Summary")
+
+    display_spending_summary = spending_summary.rename(
+        columns={
+            "spending_category": "Spending Category",
+            "customer_count": "Customers",
+            "average_baseline_spend": "Average Baseline Spend",
+            "average_followup_spend": "Average Follow-up Spend",
+            "average_spending_change_pct": "Average Change (%)",
+            "customer_percentage": "Customer Share (%)",
+        }
+    )
+
+    st.dataframe(
+        display_spending_summary.round(2),
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.subheader("Explore Customer Spending")
+
+    spending_categories = sorted(
+        spending_df["spending_category"].dropna().unique().tolist()
+    )
+
+    selected_spending_category = st.selectbox(
+        "Filter by spending category",
+        options=["All Categories"] + spending_categories,
+        key="customer_spending_category_filter",
+    )
+
+    filtered_spending = spending_df.copy()
+
+    if selected_spending_category != "All Categories":
+        filtered_spending = filtered_spending[
+            filtered_spending["spending_category"]
+            == selected_spending_category
+        ]
+
+    st.caption(f"Showing {len(filtered_spending):,} customers")
+
+    st.dataframe(
+        filtered_spending,
+        hide_index=True,
+        width="stretch",
+    )
+
+    st.download_button(
+        label="Download Customer Spending Analysis CSV",
+        data=filtered_spending.to_csv(index=False).encode("utf-8"),
+        file_name="customer_spending_analysis.csv",
+        mime="text/csv",
+        key="download_customer_spending_analysis",
+    )
+
+else:
+    st.warning(
+        "Customer spending analysis files were not found. "
+        "Run the spending analysis pipeline first."
+    )

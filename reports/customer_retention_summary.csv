@@ -1,0 +1,5 @@
+retention_category,customer_count,average_recency_days,average_receipts,average_spend,total_customer_spend,customer_percentage
+Active - Monitor,2022,5.03,421.29,888253.32,1796048214.67,20.22
+Extended Inactivity,47,17.15,326.74,689699.21,32415863.0,0.47000000000000003
+Inactivity Watch,528,9.72,368.0,774377.71,408871433.29,5.28
+Recently Active,7403,1.67,555.6,1172551.91,8680401782.43,74.03
