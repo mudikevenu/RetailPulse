@@ -25,5 +25,6 @@
   },
   "sales_value_mismatches": 0,
   "excess_exact_duplicate_rows": 13019,
+  "potential_duplicate_sales_value": 14828212.66,
   "quality_result": "REVIEW_REQUIRED"
 }

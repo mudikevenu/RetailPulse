@@ -174,17 +174,24 @@ def inspect_sales_file(sales_file: Path) -> dict:
             quote_identifier(col) for col in available_columns
         )
 
-        duplicate_count = con.execute(
+        duplicate_count, potential_duplicate_sales_value = con.execute(
             f"""
-            SELECT COALESCE(SUM(row_count - 1), 0)
+            SELECT
+                COALESCE(SUM(row_count - 1), 0),
+                COALESCE(
+                    SUM(TRY_CAST(total_value AS DOUBLE) * (row_count - 1)),
+                    0
+                )
             FROM (
-                SELECT COUNT(*) AS row_count
+                SELECT
+                    {group_by_columns},
+                    COUNT(*) AS row_count
                 FROM sales_raw
                 GROUP BY {group_by_columns}
                 HAVING COUNT(*) > 1
             ) AS duplicate_groups
             """
-        ).fetchone()[0]
+        ).fetchone()
         total_rows = con.execute(
             "SELECT COUNT(*) FROM sales_raw"
         ).fetchone()[0]
@@ -199,6 +206,7 @@ def inspect_sales_file(sales_file: Path) -> dict:
             "invalid_value_counts": invalid_counts,
             "sales_value_mismatches": value_mismatches,
             "excess_exact_duplicate_rows": duplicate_count,
+            "potential_duplicate_sales_value": round(float(potential_duplicate_sales_value), 2),
         }
 
         # Overall status is descriptive; investigate findings before

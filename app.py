@@ -918,12 +918,18 @@ if DATA_QUALITY_REPORT_PATH.exists():
             f"{quality_report.get('sales_value_mismatches', 0):,}"
         )
 
+        st.metric(
+            "Potential Duplicate Sales Value",
+            f"₹{quality_report.get('potential_duplicate_sales_value', 0):,.2f}",
+                        help="Estimated value associated with excess exact duplicate rows. This is not confirmed financial loss."
+        )
         with st.expander("View Detailed Quality Findings"):
             st.write("**Missing required columns**")
             st.write(quality_report.get("missing_required_columns", []))
 
             st.write("**Missing values by column**")
             st.json(quality_report.get("missing_value_counts", {}))
+
 
             st.write("**Invalid values**")
             st.json(quality_report.get("invalid_value_counts", {}))
