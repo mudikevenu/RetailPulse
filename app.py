@@ -739,139 +739,143 @@ if spending_path.exists() and spending_summary_path.exists():
         mime="text/csv",
         key="customer_spending_analysis_download",
     )
+# Inventory Optimization
+st.header("📦 Inventory Optimization")
 
+inventory_path = Path("data/processed/inventory_recommendations.csv")
+inventory_summary_path = Path("reports/inventory_optimization_summary.csv")
 
-# Customer Spending Decline Analysis
-st.header("💰 Customer Spending Analysis")
+if inventory_path.exists() and inventory_summary_path.exists():
+    inventory_df = pd.read_csv(inventory_path)
+    inventory_summary = pd.read_csv(inventory_summary_path)
 
-spending_path = Path("data/processed/customer_spending_analysis.csv")
-spending_summary_path = Path("reports/customer_spending_decline_summary.csv")
+    total_pairs = len(inventory_df)
+    urgent_stockouts = int(
+        (inventory_df["recommendation_status"] == "STOCKOUT_URGENT").sum()
+    )
+    pairs_to_replenish = int(
+        (inventory_df["recommended_order_qty"] > 0).sum()
+    )
+    total_order_units = int(inventory_df["recommended_order_qty"].sum())
 
-if spending_path.exists() and spending_summary_path.exists():
-    spending_df = pd.read_csv(spending_path)
-    spending_summary = pd.read_csv(spending_summary_path)
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Store–SKU Pairs", f"{total_pairs:,}")
+    col2.metric("Urgent Stockouts", f"{urgent_stockouts:,}")
+    col3.metric("Pairs to Replenish", f"{pairs_to_replenish:,}")
+    col4.metric("Suggested Order Units", f"{total_order_units:,}")
 
-    total_customers = spending_df["customer_id"].nunique()
-    declining_customers = spending_df[
-        spending_df["spending_category"].isin(
-            ["Low Decline", "Moderate Decline", "High Decline"]
-        )
-    ]["customer_id"].nunique()
-    high_decline_customers = spending_df[
-        spending_df["spending_category"] == "High Decline"
-    ]["customer_id"].nunique()
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Customers Analysed", f"{total_customers:,}")
-    col2.metric("Customers with Spending Decline", f"{declining_customers:,}")
-    col3.metric("High Spending Decline", f"{high_decline_customers:,}")
+    demand_window = inventory_summary["demand_window"].iloc[0]
+    target_cover = int(
+        inventory_summary["target_cover_days_assumption"].iloc[0]
+    )
 
     st.caption(
-        "Historical comparison: January–June 2025 versus "
-        "July–December 2025. These categories describe past spending "
-        "changes, not confirmed future churn."
+        f"Historical demand window: {demand_window}. "
+        f"Target stock cover assumption: {target_cover} days. "
+        "These are planning suggestions based on historical data, "
+        "not live stock levels or confirmed purchase orders. "
+        "Verify supplier lead times and incoming inventory before ordering."
     )
 
-    st.subheader("Spending Change by Customer Category")
+    st.subheader("Inventory Status Overview")
+    status_chart = inventory_summary.set_index(
+        "recommendation_status"
+    )[["inventory_pairs"]]
+    st.bar_chart(status_chart)
 
-    import altair as alt
+    st.subheader("Explore Inventory Recommendations")
 
-    spending_chart = (
-        alt.Chart(spending_summary)
-        .mark_bar()
-        .encode(
-            x=alt.X(
-                "customer_count:Q",
-                title="Number of Customers",
-                scale=alt.Scale(domainMin=0),
-            ),
-            y=alt.Y(
-                "spending_category:N",
-                title="Spending Category",
-                sort="-x",
-            ),
-            color=alt.Color(
-                "spending_category:N",
-                title="Category",
-                legend=None,
-            ),
-            tooltip=[
-                alt.Tooltip("spending_category:N", title="Category"),
-                alt.Tooltip("customer_count:Q", title="Customers"),
-                alt.Tooltip(
-                    "customer_percentage:Q",
-                    title="Customer Share (%)",
-                    format=".2f",
-                ),
-                alt.Tooltip(
-                    "average_spending_change_pct:Q",
-                    title="Average Spending Change (%)",
-                    format=".2f",
-                ),
-            ],
+    status_options = sorted(
+        inventory_df["recommendation_status"].dropna().unique().tolist()
+    )
+    city_options = sorted(inventory_df["city"].dropna().unique().tolist())
+
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    with filter_col1:
+        selected_status = st.selectbox(
+            "Filter by recommendation status",
+            ["All Statuses"] + status_options,
+            key="inventory_status_filter",
         )
-        .properties(height=240)
+
+    with filter_col2:
+        selected_city = st.selectbox(
+            "Filter by city",
+            ["All Cities"] + city_options,
+            key="inventory_city_filter",
+        )
+
+    stores_for_city = inventory_df
+    if selected_city != "All Cities":
+        stores_for_city = stores_for_city[
+            stores_for_city["city"] == selected_city
+        ]
+    store_options = sorted(
+        stores_for_city["store_name"].dropna().unique().tolist()
     )
 
-    st.altair_chart(spending_chart, width="stretch")
+    with filter_col3:
+        selected_store = st.selectbox(
+            "Filter by store",
+            ["All Stores"] + store_options,
+            key="inventory_store_filter",
+        )
 
-    st.subheader("Spending Category Summary")
+    filtered_inventory = inventory_df.copy()
 
-    display_spending_summary = spending_summary.rename(
-        columns={
-            "spending_category": "Spending Category",
-            "customer_count": "Customers",
-            "average_baseline_spend": "Average Baseline Spend",
-            "average_followup_spend": "Average Follow-up Spend",
-            "average_spending_change_pct": "Average Change (%)",
-            "customer_percentage": "Customer Share (%)",
-        }
-    )
-
-    st.dataframe(
-        display_spending_summary.round(2),
-        hide_index=True,
-        width="stretch",
-    )
-
-    st.subheader("Explore Customer Spending")
-
-    spending_categories = sorted(
-        spending_df["spending_category"].dropna().unique().tolist()
-    )
-
-    selected_spending_category = st.selectbox(
-        "Filter by spending category",
-        options=["All Categories"] + spending_categories,
-        key="customer_spending_category_filter",
-    )
-
-    filtered_spending = spending_df.copy()
-
-    if selected_spending_category != "All Categories":
-        filtered_spending = filtered_spending[
-            filtered_spending["spending_category"]
-            == selected_spending_category
+    if selected_status != "All Statuses":
+        filtered_inventory = filtered_inventory[
+            filtered_inventory["recommendation_status"] == selected_status
         ]
 
-    st.caption(f"Showing {len(filtered_spending):,} customers")
+    if selected_city != "All Cities":
+        filtered_inventory = filtered_inventory[
+            filtered_inventory["city"] == selected_city
+        ]
+
+    if selected_store != "All Stores":
+        filtered_inventory = filtered_inventory[
+            filtered_inventory["store_name"] == selected_store
+        ]
+
+    display_columns = [
+        "store_name",
+        "city",
+        "sku_id",
+        "sku_name",
+        "category",
+        "stock_on_hand",
+        "reorder_point",
+        "safety_stock",
+        "units_90d",
+        "stock_cover_days",
+        "recommended_order_qty",
+        "recommendation_status",
+        "recommendation_note",
+    ]
+
+    st.caption(
+        f"Showing {len(filtered_inventory):,} of {total_pairs:,} "
+        "store–SKU pairs"
+    )
 
     st.dataframe(
-        filtered_spending,
-        hide_index=True,
+        filtered_inventory[display_columns],
         width="stretch",
+        hide_index=True,
     )
 
     st.download_button(
-        label="Download Customer Spending Analysis CSV",
-        data=filtered_spending.to_csv(index=False).encode("utf-8"),
-        file_name="customer_spending_analysis.csv",
+        label="Download Inventory Recommendations CSV",
+        data=filtered_inventory.to_csv(index=False).encode("utf-8"),
+        file_name="inventory_recommendations.csv",
         mime="text/csv",
-        key="download_customer_spending_analysis",
+        key="inventory_optimization_download",
     )
 
 else:
     st.warning(
-        "Customer spending analysis files were not found. "
-        "Run the spending analysis pipeline first."
+        "Inventory optimization files were not found. "
+        "Run `python -m src.inventory_optimization` first."
     )

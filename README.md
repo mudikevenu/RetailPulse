@@ -15,6 +15,8 @@ RetailPulse is a data science project that uses historical retail sales data and
 
 ## Features
 
+- Customer segmentation and retention analysis.
+- Inventory optimization with stockout alerts, demand-based replenishment suggestions, and downloadable recommendations.
 - Historical daily sales visualization.
 - Random Forest demand forecasting.
 - Calendar, lagged-sales, rolling-average, and promotion-related features.
@@ -127,14 +129,25 @@ RetailPulse/
 ├── requirements.txt
 ├── data/
 │   └── processed/
-│       └── daily_sales_with_promotion_features.csv
+│       ├── daily_sales_with_promotion_features.csv
+│       └── inventory_recommendations.csv
 ├── models/
 │   ├── forecast_features.json
 │   └── random_forest_demand_forecast.joblib
-└── reports/
-    ├── forecast_model_comparison.csv
-    ├── forecast_model_evaluation.md
-    └── quarterly_forecast_backtest.csv
+├── reports/
+│   ├── forecast_model_comparison.csv
+│   ├── forecast_model_evaluation.md
+│   ├── quarterly_forecast_backtest.csv
+│   └── inventory_optimization_summary.csv
+├── src/
+│   ├── customer_retention.py
+│   ├── customer_segmentation.py
+│   ├── customer_spending_analysis.py
+│   └── inventory_optimization.py
+└── tests/
+    ├── test_customer_retention.py
+    ├── test_customer_segmentation.py
+    └── test_inventory_optimization.py
 ```
 
 ## Run Locally
@@ -183,7 +196,10 @@ The dashboard uses the processed data and saved model included in the repository
 - The available promotion schedule ends in November 2025. Future promotion activity is set to zero in the demonstration forecast because a future schedule is unavailable.
 - The displayed forecast begins in January 2026 and is a historical demonstration, not a forecast updated through the current date.
 - Exact-row deduplication should be reviewed against authoritative transaction identifiers where available.
-- Additional work could include customer segmentation, churn prediction, inventory optimization, automated monitoring, and model retraining.
+- Additional work could include a validated churn-prediction model when suitable labels become available, automated model monitoring, model retraining, and deployment improvements.
+- Inventory recommendations use historical sales from October 3 through December 31, 2025, and the inventory snapshot available for this project. They do not represent live inventory levels.
+- The 14-day target stock cover is a configurable demonstration assumption, not an estimate of supplier lead time. Suggested order quantities do not account for incoming purchase orders or confirmed deliveries and should be reviewed before operational use.
+- Store–SKU pairs with no sales during the 90-day analysis window are flagged for review rather than automatically assigned a demand-based order quantity.
 
 ## Disclaimer
 
