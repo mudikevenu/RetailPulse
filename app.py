@@ -1,5 +1,6 @@
 
 from pathlib import Path
+import json
 
 import joblib
 import pandas as pd
@@ -10,6 +11,7 @@ import streamlit as st
 # --------------------------------------------------
 
 PROJECT_DIR = Path(__file__).resolve().parent
+DATA_QUALITY_REPORT_PATH = PROJECT_DIR / "reports" / "data_quality_report.json"
 
 DATA_PATH = (
     PROJECT_DIR
@@ -878,4 +880,63 @@ else:
     st.warning(
         "Inventory optimization files were not found. "
         "Run `python -m src.inventory_optimization` first."
+    )
+st.divider()
+st.header("🔎 Data Quality Checks")
+
+if DATA_QUALITY_REPORT_PATH.exists():
+    try:
+        with open(DATA_QUALITY_REPORT_PATH, "r", encoding="utf-8") as report_file:
+            quality_report = json.load(report_file)
+
+            quality_result = quality_report.get("quality_result", "UNKNOWN")
+
+        if quality_result == "REVIEW_REQUIRED":
+            st.warning(
+                "Review required: the report detected data-quality "
+                "findings that should be investigated."
+            )
+        elif quality_result == "NO_ISSUES_DETECTED":
+            st.success("No data-quality issues were detected.")
+        else:
+            st.error(
+                f"Unexpected data-quality report status: {quality_result}"
+            )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Sales Records Scanned",
+            f"{quality_report.get('total_rows', 0):,}"
+        )
+        col2.metric(
+            "Excess Duplicate Rows",
+            f"{quality_report.get('excess_exact_duplicate_rows', 0):,}"
+        )
+        col3.metric(
+            "Sales Value Mismatches",
+            f"{quality_report.get('sales_value_mismatches', 0):,}"
+        )
+
+        with st.expander("View Detailed Quality Findings"):
+            st.write("**Missing required columns**")
+            st.write(quality_report.get("missing_required_columns", []))
+
+            st.write("**Missing values by column**")
+            st.json(quality_report.get("missing_value_counts", {}))
+
+            st.write("**Invalid values**")
+            st.json(quality_report.get("invalid_value_counts", {}))
+
+            st.write(
+                "**Overall result:**",
+                quality_report.get("quality_result", "UNKNOWN")
+            )
+
+    except (OSError, json.JSONDecodeError) as error:
+        st.error(f"Could not read the data quality report: {error}")
+else:
+    st.info(
+        "No saved data quality report found. Run "
+        "`python -m src.data_quality_checks` in the terminal first."
     )

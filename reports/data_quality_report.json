@@ -1,0 +1,29 @@
+{
+  "file": "sales_transactions.csv",
+  "status": "COMPLETED",
+  "total_rows": 9972038,
+  "columns_found": 11,
+  "missing_required_columns": [],
+  "missing_value_counts": {
+    "date": 0,
+    "receipt_id": 0,
+    "store_id": 0,
+    "sku_id": 0,
+    "customer_id": 0,
+    "quantity": 0,
+    "unit_price": 0,
+    "total_value": 0,
+    "channel": 0,
+    "discount_pct": 0
+  },
+  "invalid_value_counts": {
+    "invalid_dates": 0,
+    "invalid_quantities": 0,
+    "invalid_unit_prices": 0,
+    "invalid_total_values": 0,
+    "invalid_discounts": 0
+  },
+  "sales_value_mismatches": 0,
+  "excess_exact_duplicate_rows": 13019,
+  "quality_result": "REVIEW_REQUIRED"
+}
