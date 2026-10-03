@@ -129,24 +129,34 @@ RetailPulse/
 ├── requirements.txt
 ├── data/
 │   └── processed/
+│       ├── customer_retention_analysis.csv
+│       ├── customer_segments.csv
+│       ├── customer_spending_analysis.csv
 │       ├── daily_sales_with_promotion_features.csv
 │       └── inventory_recommendations.csv
 ├── models/
+│   ├── customer_segmentation_pipeline.joblib
 │   ├── forecast_features.json
 │   └── random_forest_demand_forecast.joblib
 ├── reports/
+│   ├── customer_retention_summary.csv
+│   ├── customer_segment_profiles.csv
+│   ├── customer_spending_decline_summary.csv
+│   ├── data_quality_report.json
 │   ├── forecast_model_comparison.csv
 │   ├── forecast_model_evaluation.md
-│   ├── quarterly_forecast_backtest.csv
-│   └── inventory_optimization_summary.csv
+│   ├── inventory_optimization_summary.csv
+│   └── quarterly_forecast_backtest.csv
 ├── src/
 │   ├── customer_retention.py
 │   ├── customer_segmentation.py
 │   ├── customer_spending_analysis.py
+│   ├── data_quality_checks.py
 │   └── inventory_optimization.py
 └── tests/
     ├── test_customer_retention.py
     ├── test_customer_segmentation.py
+    ├── test_data_quality_checks.py
     └── test_inventory_optimization.py
 ```
 

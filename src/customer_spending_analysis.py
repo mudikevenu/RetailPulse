@@ -6,9 +6,12 @@ import duckdb
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-SALES_FILE = Path(
-    "/Users/venumudike/Downloads/archive/"
-    "retail_clean_dataset/sales_transactions.csv"
+SALES_FILE = (
+    Path.home()
+    / "Downloads"
+    / "archive"
+    / "retail_clean_dataset"
+    / "sales_transactions.csv"
 )
 
 OUTPUT_FILE = (

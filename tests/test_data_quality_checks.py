@@ -66,6 +66,10 @@ class TestDataQualityChecks(unittest.TestCase):
 
         self.assertEqual(result["total_rows"], 3)
         self.assertEqual(result["excess_exact_duplicate_rows"], 2)
+        self.assertEqual(
+            result["potential_duplicate_sales_value"],
+            round(float(row["total_value"]) * 2, 2),
+        )
         self.assertEqual(result["quality_result"], "REVIEW_REQUIRED")
 
     def test_blank_promotion_id_is_not_a_missing_required_value(self):
