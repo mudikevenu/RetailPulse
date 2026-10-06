@@ -1,0 +1,3 @@
+model,test_period,roc_auc,precision_at_top_20_pct,test_positive_rate
+logistic_regression,2025_H1,0.7808,0.109,0.0389
+random_forest,2025_H1,0.823,0.134,0.0389

@@ -36,7 +36,7 @@ class TestCustomerSegmentation(unittest.TestCase):
     def test_customer_ids_and_clusters_are_present(self):
         self.assertFalse(self.customers["cust_id"].isna().any())
         self.assertFalse(self.customers["cluster_id"].isna().any())
-        self.assertEqual(self.customers["cluster_id"].nunique(), 4)
+        self.assertEqual(self.customers["cluster_id"].nunique(), 8)
 
     def test_purchase_values_are_valid(self):
         for column in (
@@ -59,7 +59,7 @@ class TestCustomerSegmentation(unittest.TestCase):
             )
 
     def test_cluster_profiles_reconcile(self):
-        self.assertEqual(len(self.profiles), 4)
+        self.assertEqual(len(self.profiles), 8)
         self.assertEqual(
             int(self.profiles["customer_count"].sum()),
             len(self.customers),
@@ -75,8 +75,8 @@ class TestCustomerSegmentation(unittest.TestCase):
 
         self.assertIn("pipeline", artifact)
         self.assertIn("features", artifact)
-        self.assertEqual(artifact["n_clusters"], 4)
-        self.assertEqual(len(artifact["features"]), 3)
+        self.assertEqual(artifact["n_clusters"], 8)
+        self.assertEqual(len(artifact["features"]), 4)
 
         predictions = artifact["pipeline"].predict(
             self.customers[artifact["features"]].head(5)

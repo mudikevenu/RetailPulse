@@ -1,0 +1,2 @@
+model,lookback_days,test_days,MAE,RMSE,MAPE_percent,train_observations,test_observations
+LSTM,30,30,2614.569856770833,2798.252484443416,14.323907581769996,1431,30

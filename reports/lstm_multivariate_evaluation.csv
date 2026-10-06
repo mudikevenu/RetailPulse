@@ -1,0 +1,2 @@
+model,lookback_days,test_days,MAE,RMSE,MAPE_percent,train_observations,test_observations,feature_count
+Multivariate LSTM,30,30,1227.4209733247758,1345.527733581134,6.71764624921936,1401,30,17

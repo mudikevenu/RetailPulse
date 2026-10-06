@@ -21,13 +21,14 @@ OUTPUT_DIR = PROJECT_ROOT / "data" / "processed"
 MODEL_DIR = PROJECT_ROOT / "models"
 REPORT_DIR = PROJECT_ROOT / "reports"
 
-N_CLUSTERS = 4
+N_CLUSTERS = 8
 RANDOM_STATE = 42
 
 FEATURES = [
     "log_recency",
     "log_frequency",
     "log_monetary",
+    "total_units",
 ]
 
 
@@ -165,7 +166,7 @@ def run_segmentation() -> pd.DataFrame:
                 KMeans(
                     n_clusters=N_CLUSTERS,
                     random_state=RANDOM_STATE,
-                    n_init=10,
+                    n_init=20,
                 ),
             ),
         ]
