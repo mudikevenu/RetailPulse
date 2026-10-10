@@ -1,6 +1,6 @@
-# RetailPulse — Retail Demand Forecasting & Analytics
+# RetailPulse — AI-Powered Retail Analytics & Demand Forecasting
 
-RetailPulse is a data science project that uses historical retail sales data and machine learning to forecast daily demand. It includes a Streamlit dashboard for exploring historical sales, reviewing model performance, and viewing future demand forecasts.
+RetailPulse is a retail analytics project that combines machine learning, historical sales analysis, customer analytics, inventory optimization, and data-quality checks in an interactive Streamlit dashboard.
 
 **Live dashboard:** https://retailpulse-venu.streamlit.app
 **GitHub repository:** https://github.com/mudikevenu/RetailPulse
@@ -8,157 +8,195 @@ RetailPulse is a data science project that uses historical retail sales data and
 ## Project Objectives
 
 - Analyze historical retail sales patterns.
-- Build a machine learning model to forecast daily unit demand.
-- Compare model performance against a seasonal-naive baseline.
-- Present historical data, forecasts, and evaluation results through an interactive dashboard.
-- Document data-quality decisions, evaluation methodology, and limitations.
+- Forecast daily unit demand using machine learning.
+- Compare forecasting models using consistent evaluation periods.
+- Segment customers and analyze retention indicators and spending declines.
+- Generate demand-based inventory recommendations.
+- Identify data-quality issues and communicate limitations transparently.
+- Present analytical results through an interactive dashboard.
 
-## Features
+## Dashboard Features
 
-- Customer segmentation and retention analysis.
-- Inventory optimization with stockout alerts, demand-based replenishment suggestions, and downloadable recommendations.
-- Historical daily sales visualization.
-- Random Forest demand forecasting.
-- Calendar, lagged-sales, rolling-average, and promotion-related features.
-- Comparison with a seasonal-naive forecasting baseline.
-- Quarterly expanding-window backtesting.
-- Interactive forecast dashboard built with Streamlit.
-- Forecast evaluation metrics and downloadable results, where available in the dashboard.
+RetailPulse contains five main pages:
+
+### 1. Dashboard
+Provides a consolidated view of historical sales and key retail analytics.
+
+### 2. Forecast
+Displays predicted daily demand, forecast charts, prediction tables, downloadable results, model evaluation metrics, and quarterly backtesting comparisons.
+
+### 3. Customers
+Includes customer segmentation, retention monitoring, and historical spending-decline analysis. These indicators support customer analysis but should not be interpreted as confirmed churn predictions.
+
+### 4. Inventory
+Displays store–SKU inventory recommendations, stock-risk categories, suggested order quantities, and supporting summaries.
+
+### 5. Data Quality
+Reports automated data-quality checks, including missing columns, missing values, invalid values, sales-value mismatches, and exact duplicate-row findings.
 
 ## Technology Stack
 
 - **Language:** Python
 - **Data processing:** pandas, NumPy, DuckDB
 - **Machine learning:** scikit-learn
-- **Forecasting:** Random Forest regression
-- **Visualization and dashboard:** Matplotlib, Streamlit
-- **Model persistence:** joblib
-- **Development:** Jupyter Notebook, Git, GitHub
+- **Forecasting:** Random Forest and experimental LSTM/ensemble models
+- **Visualization and dashboard:** Streamlit, Matplotlib
+- **Model persistence:** joblib and Keras
+- **Development and version control:** Jupyter Notebook, Git, GitHub
 
-Prophet is included in the project environment, but the reported model results in this README are for the Random Forest model and seasonal-naive baseline.
+The presence of a model or library in the repository does not by itself establish production deployment, continuous retraining, or live monitoring.
 
 ## Dataset and Data Preparation
 
-The project uses retail transaction data covering **January 1, 2022, through December 31, 2025**.
+The historical sales data covers **January 1, 2022, through December 31, 2025**. The original transaction source contains approximately 9.97 million rows. DuckDB was used to process the large dataset and aggregate transaction-level data into a daily time series.
 
-The original transaction dataset contains approximately 9.97 million rows. DuckDB was used to process the large dataset without loading the entire file into pandas.
+The processed daily sales dataset contains **1,461 daily records**.
 
-### Data-quality handling
+### Data-quality findings
 
-- Checked transaction fields and date coverage.
-- Validated the relationship between quantity, unit price, discount, and transaction value.
-- Identified exact full-row duplicate records.
-- Removed exact full-row duplicates for the daily aggregation used in forecasting.
-- Aggregated transactions into a daily sales time series.
-- Created calendar, lag, rolling-average, and promotion-related features.
+The automated report identifies:
 
-After exact full-row deduplication, the processed data contains **9,959,019 transaction rows** and **1,461 daily records**.
+- **9,972,038** source sales records scanned.
+- **13,019** excess exact duplicate rows.
+- **0** missing required columns.
+- **0** missing values.
+- **0** invalid values in the configured checks.
+- **0** sales-value mismatches.
 
-Duplicate removal is a data-preparation assumption: identical rows may sometimes represent legitimate repeated transactions. The deduplication decision should therefore be reviewed if authoritative transaction IDs or source-system guidance become available.
+The estimated sales value associated with excess exact duplicate rows is **₹14,828,212.66**. This is a diagnostic estimate, not confirmed financial loss.
 
-The resulting daily dataset contains **18,733,005 units sold** across the four-year period.
+Exact duplicate rows are excluded from the forecasting aggregation. However, identical records may represent repeated legitimate transactions in some source systems. The duplicate findings should therefore be validated against authoritative transaction identifiers and source-system guidance before permanent deletion from the raw data.
 
-## Forecasting Methodology
+## Demand Forecasting
 
-The forecasting workflow uses daily unit sales as its target.
+The primary forecasting model is a Random Forest regressor using historical daily unit sales as its target. Features include calendar attributes, lagged sales, rolling averages, and promotion-related variables.
 
-The Random Forest model uses features such as:
+The repository also contains LSTM and ensemble forecasting experiments. These models are compared using saved evaluation artifacts; their existence does not imply that they are the model used by every dashboard workflow.
 
-- Calendar information.
-- Previous-day and other lagged sales.
-- Rolling averages of historical sales.
-- Promotion-related features.
-- Year information.
+### Final 30-day holdout comparison
 
-The model is compared with a seasonal-naive baseline, which uses sales from the corresponding seasonal period in the past.
+The saved final comparison evaluates the period **December 2–31, 2025**, using the same 30-day holdout for each listed model.
 
-### Evaluation approach
+| Model | MAE (units/day) | RMSE (units/day) | MAPE |
+|---|---:|---:|---:|
+| Random Forest | 169.04 | 218.63 | 0.93% |
+| Seasonal-naive | 574.97 | 672.10 | 3.14% |
+| Prophet + LSTM ensemble | 991.50 | 1,263.53 | 5.42% |
+| Prophet | 953.06 | 1,320.45 | 5.23% |
+| Multivariate LSTM | 1,227.42 | 1,345.53 | 6.72% |
 
-The reported final-period evaluation covers **October–December 2025** using rolling one-day-ahead predictions. For each prediction, lag features use actual sales observed before that forecast date.
+**Best model in this comparison:** Random Forest, based on the lowest MAE, RMSE, and MAPE among the evaluated candidates.
 
-This is different from forecasting multiple future days recursively, where earlier predictions are used to construct lag features for later predictions.
+- **MAE:** Mean Absolute Error.
+- **RMSE:** Root Mean Squared Error.
+- **MAPE:** Mean Absolute Percentage Error.
 
-## Model Evaluation Results
-
-### October–December 2025
-
-| Metric | Random Forest | Seasonal-naive baseline |
-|---|---:|---:|
-| MAE | 411.93 units/day | 515.37 units/day |
-| RMSE | 509.59 units/day | 623.17 units/day |
-| MAPE | 2.55% | 3.24% |
-
-**Metric definitions**
-
-- **MAE:** Mean Absolute Error; the average absolute difference between actual and predicted daily units.
-- **RMSE:** Root Mean Squared Error; a metric that penalizes larger errors more heavily.
-- **MAPE:** Mean Absolute Percentage Error; the average absolute percentage error.
+These results apply to the recorded historical evaluation period. They do not guarantee future performance.
 
 ### Quarterly backtesting
 
-Across seven expanding-window quarterly backtests from **Q1 2024 through Q3 2025**, the recorded mean quarterly MAPE was:
+The saved quarterly backtesting report covers seven expanding-window quarterly evaluations from Q1 2024 through Q3 2025.
 
 | Model | Mean quarterly MAPE |
 |---|---:|
 | Random Forest | 3.26% |
 | Seasonal-naive baseline | 5.24% |
 
-The Random Forest model had lower MAPE than the baseline in each of the seven evaluated quarters. These results describe the evaluated historical periods and do not guarantee future performance.
+The reported Random Forest mean quarterly MAPE is approximately 37.7% lower than the seasonal-naive baseline. This describes the evaluated periods, not guaranteed future accuracy.
 
-The October–December 2025 period was used during model/configuration selection, so it should not be considered a completely untouched final holdout.
+### Forecast limitations
 
-## Streamlit Dashboard
+The dashboard's demonstration forecast begins on January 1, 2026, immediately after the available historical sales period ending December 31, 2025. It is a historical demonstration rather than a forecast updated through the current date.
 
-The dashboard presents:
+Future promotion activity is set to zero in the demonstration forecast because a validated future promotion schedule is unavailable. Multi-day recursive predictions may differ from rolling one-day-ahead evaluation because later predictions use earlier predictions as lag inputs.
 
-- Historical daily sales.
-- Forecasted demand.
-- Model evaluation metrics.
-- Quarterly model comparison results.
-- Supporting tables and forecast outputs.
+## Customer Analytics
 
-The demonstration forecast is configured to start on **January 1, 2026**, immediately after the available historical sales period.
+### Customer segmentation
+RetailPulse includes a saved customer segmentation pipeline and segment profiles for grouping customers by historical behavior and value-related features.
+
+### Retention monitoring
+Customer retention summaries provide activity and inactivity indicators. These are monitoring categories, not verified churn probabilities.
+
+### Spending-decline analysis
+The project includes a customer spending-decline model and associated evaluation artifacts. The target is a future spending decline, not customer churn. Its scores should be interpreted in the context of the evaluation dataset and its class imbalance.
+
+## Inventory Optimization
+
+Inventory recommendations operate on store–SKU pairs using historical sales and the available inventory snapshot.
+
+The current recommendations use historical sales from **October 3 through December 31, 2025**, with a configurable demonstration target of **14 days of stock cover**.
+
+Important limitations:
+
+- The recommendations do not represent live inventory levels.
+- Incoming purchase orders and confirmed deliveries are not included.
+- The 14-day stock-cover target is a demonstration assumption, not an estimate of supplier lead time.
+- Store–SKU pairs with no recent demand are flagged for review instead of automatically receiving demand-based order quantities.
+- Suggested order quantities should be reviewed before operational use.
 
 ## Project Structure
 
 ```text
 RetailPulse/
-├── 01_eda.ipynb
 ├── app.py
-├── README.md
+├── 01_eda.ipynb
 ├── requirements.txt
 ├── data/
 │   └── processed/
 │       ├── customer_retention_analysis.csv
 │       ├── customer_segments.csv
 │       ├── customer_spending_analysis.csv
+│       ├── customer_spending_decline_model_dataset.csv
 │       ├── daily_sales_with_promotion_features.csv
 │       └── inventory_recommendations.csv
 ├── models/
 │   ├── customer_segmentation_pipeline.joblib
+│   ├── customer_spending_decline_logistic_regression.joblib
+│   ├── customer_spending_decline_model.joblib
+│   ├── customer_spending_decline_random_forest.joblib
 │   ├── forecast_features.json
+│   ├── lstm_demand_forecast.keras
+│   ├── lstm_features.json
+│   ├── lstm_multivariate_demand_forecast.keras
+│   ├── lstm_multivariate_scalers.json
+│   ├── lstm_demand_scaler.json
 │   └── random_forest_demand_forecast.joblib
 ├── reports/
 │   ├── customer_retention_summary.csv
 │   ├── customer_segment_profiles.csv
+│   ├── customer_spending_decline_model_metrics.csv
 │   ├── customer_spending_decline_summary.csv
 │   ├── data_quality_report.json
+│   ├── final_forecast_model_comparison.csv
 │   ├── forecast_model_comparison.csv
 │   ├── forecast_model_evaluation.md
 │   ├── inventory_optimization_summary.csv
+│   ├── lstm_30_day_predictions.csv
+│   ├── lstm_model_evaluation.csv
+│   ├── lstm_multivariate_30_day_predictions.csv
+│   ├── lstm_multivariate_evaluation.csv
+│   ├── prophet_lstm_ensemble_evaluation.csv
+│   ├── prophet_lstm_ensemble_predictions.csv
 │   └── quarterly_forecast_backtest.csv
 ├── src/
 │   ├── customer_retention.py
 │   ├── customer_segmentation.py
 │   ├── customer_spending_analysis.py
+│   ├── customer_spending_decline_model.py
 │   ├── data_quality_checks.py
-│   └── inventory_optimization.py
+│   ├── final_forecast_comparison.py
+│   ├── forecast_ensemble.py
+│   ├── inventory_optimization.py
+│   └── lstm_demand_forecast.py
 └── tests/
     ├── test_customer_retention.py
     ├── test_customer_segmentation.py
+    ├── test_customer_spending_decline_model.py
     ├── test_data_quality_checks.py
     └── test_inventory_optimization.py
 ```
+
 
 ## Run Locally
 
@@ -169,7 +207,7 @@ git clone https://github.com/mudikevenu/RetailPulse.git
 cd RetailPulse
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
 Python 3.11 is the development environment used for this project.
 
@@ -191,26 +229,34 @@ python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-Open the local URL displayed in your Terminal, usually:
+Open the local URL shown in the terminal, usually `http://localhost:8501`.
 
-`http://localhost:8501`
+### 5. Run automated tests
 
-The dashboard uses the processed data and saved model included in the repository. The original large transaction dataset is not required to launch the existing dashboard.
+```bash
+python -m py_compile app.py
+python -m pytest -q
+```
 
-## Limitations and Future Improvements
+The latest recorded test run passed all **31 tests**. Run the tests again after future changes to confirm the current result.
 
-- Forecast accuracy may change as sales patterns and customer behavior change.
-- Random Forest predictions may smooth sharp seasonal peaks.
-- Historical evaluation results do not guarantee future accuracy.
-- Recursive multi-day forecasts can differ from rolling one-day-ahead evaluation results.
-- The available promotion schedule ends in November 2025. Future promotion activity is set to zero in the demonstration forecast because a future schedule is unavailable.
-- The displayed forecast begins in January 2026 and is a historical demonstration, not a forecast updated through the current date.
-- Exact-row deduplication should be reviewed against authoritative transaction identifiers where available.
-- Additional work could include a validated churn-prediction model when suitable labels become available, automated model monitoring, model retraining, and deployment improvements.
-- Inventory recommendations use historical sales from October 3 through December 31, 2025, and the inventory snapshot available for this project. They do not represent live inventory levels.
-- The 14-day target stock cover is a configurable demonstration assumption, not an estimate of supplier lead time. Suggested order quantities do not account for incoming purchase orders or confirmed deliveries and should be reviewed before operational use.
-- Store–SKU pairs with no sales during the 90-day analysis window are flagged for review rather than automatically assigned a demand-based order quantity.
+The existing dashboard uses processed datasets and saved model artifacts. The original large transaction dataset is not required to launch the current dashboard.
+
+## Production Readiness and Future Work
+
+The current project contains analytics modules, saved models, evaluation reports, automated tests, a Streamlit deployment, and Git-based version control.
+
+The following capabilities should be considered separate production-readiness work unless independently implemented and verified:
+
+- Automated ETL scheduling and recovery.
+- Automated model retraining and model registry workflows.
+- Live model and data-drift monitoring.
+- CI/CD automation.
+- Production container orchestration and cloud infrastructure.
+- Real-time data ingestion and inventory integration.
+- Forecast refresh using current sales and promotion data.
+- Validation of duplicate transactions using authoritative identifiers.
 
 ## Disclaimer
 
-RetailPulse is a data science project intended for analytical and educational use. Forecasts are estimates based on historical data and modeling assumptions. They should not be treated as guaranteed sales outcomes or used as the sole basis for business decisions.
+RetailPulse is a data science and analytics project. Forecasts, customer indicators, and inventory recommendations are based on historical data and modeling assumptions. They are not guaranteed outcomes and should not be used as the sole basis for business decisions.
